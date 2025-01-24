@@ -13,7 +13,7 @@ if ! [[ $IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         exit 1
     fi
 fi
-sudo echo "Scanning $IP"
+sudo echo -e "\033[0;33mScanning $IP\033[0m"
 
 sudo grc nmap -sU -Pn -p 161 $IP -oN 001-scan-snmp.md
 
