@@ -1,6 +1,6 @@
 #!/bin/bash
 # dockrmanhattn@gmail.com
-# v 0.1.0
+# v 0.1.1
 # This script prompts for sudo password to check for SNMP
 # Usage: scan 192.168.1.100
 
@@ -36,8 +36,14 @@ else
     exit 1
 fi
 
-echo "nxc smb $IP -u '' -p '' --shares" > 003-scan-nxc.md
-nxc smb $IP -u '' -p '' --shares | tee -a 003-scan-nxc.md
-echo "" >> 003-scan-nxc.md
-echo "nxc smb $IP -u 'a' -p '' --shares" >> 003-scan-nxc.md
-nxc smb $IP -u 'a' -p '' --shares | tee -a 003-scan-nxc.md
+echo "nxc smb $IP --generate-hosts-file 004-hosts-nxc.md"
+nxc smb $IP --generate-hosts-file 004-hosts-nxc.md
+cat 004-hosts-nxc.md | sudo tee -a /etc/hosts > /dev/null
+
+echo "nxc smb $IP -u '' -p '' --shares" > 004-scan-nxc.md
+nxc smb $IP -u '' -p '' --shares | tee -a 004-scan-nxc.md
+echo "" >> 004-scan-nxc.md
+echo "nxc smb $IP -u 'a' -p '' --shares" >> 004-scan-nxc.md
+nxc smb $IP -u 'a' -p '' --shares | tee -a 004-scan-nxc.md
+
+
