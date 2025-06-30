@@ -36,9 +36,11 @@ else
     exit 1
 fi
 
-echo "nxc smb $IP --generate-hosts-file 003-hosts-nxc.md"
+#echo "nxc smb $IP --generate-hosts-file 003-hosts-nxc.md"
 nxc smb $IP --generate-hosts-file 003-hosts-nxc.md
-cat 003-hosts-nxc.md | sudo tee -a /etc/hosts > /dev/null
+if [[ -f 003-hosts-nxc.md ]]; then
+  cat 003-hosts-nxc.md | sudo tee -a /etc/hosts > /dev/null
+fi
 
 echo "nxc smb $IP -u '' -p '' --shares" > 004-scan-nxc.md
 nxc smb $IP -u '' -p '' --shares | tee -a 004-scan-nxc.md
