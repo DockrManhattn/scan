@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 import sys
@@ -16,16 +15,6 @@ def apt_install(package):
 
 
 def ensure_system_tools():
-    grc_path = shutil.which("grc")
-    home = os.path.expanduser("~")
-    if grc_path and not grc_path.startswith(home):
-        print("grc is already installed.")
-    else:
-        print("Installing grc...")
-        result = subprocess.run(["sudo", "apt", "install", "-y", "grc"])
-        if result.returncode != 0:
-            print("  WARNING: apt install grc failed. grc is optional; nmap will run without it.")
-
     if command_exists("pipx"):
         print("pipx is already installed.")
     else:
