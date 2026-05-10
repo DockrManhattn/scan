@@ -42,7 +42,20 @@ def ensure_system_tools():
         if result.returncode != 0:
             print("  WARNING: pipx install netexec failed. Install manually.")
 
-    print("Note: rustscan must be installed manually from github.com/RustScan/RustScan")
+    if command_exists("rustscan"):
+        print("rustscan is already installed.")
+    else:
+        print("Downloading RustScan...")
+        deb = "rustscan_2.3.0_amd64.deb"
+        result = subprocess.run(
+            ["wget", "-q", f"https://github.com/RustScan/RustScan/releases/download/2.3.0/{deb}"]
+        )
+        if result.returncode != 0:
+            print("  WARNING: wget failed. Install rustscan manually from github.com/RustScan/RustScan")
+        else:
+            print("Installing RustScan...")
+            subprocess.run(["sudo", "apt", "install", "-y", f"./{deb}"])
+            subprocess.run(["rm", "-f", deb])
 
 
 if __name__ == "__main__" and len(sys.argv) == 1:
