@@ -22,6 +22,13 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 import ipaddress
 
+try:
+    from colorama import Fore, Style, init as colorama_init
+    colorama_init(autoreset=True)
+    _COLORAMA = True
+except ImportError:
+    _COLORAMA = False
+
 
 # =========================
 # Default Config (Your Working Version)
@@ -345,9 +352,50 @@ def run_rustscan_twice(ip, logger, workdir):
 def filter_ports(ports, excluded):
     return [p for p in ports if p not in excluded]
 
+_PORT_LINE = re.compile(r'^(\d+/\w+)\s+(open|closed|filtered)\s+(\S+)(.*)')
+_HEADER_LINE = re.compile(r'^PORT\s+STATE\s+SERVICE')
+_REPORT_LINE = re.compile(r'^Nmap scan report|^Host is ')
+
+def _colorize_nmap(text):
+    if not _COLORAMA:
+        return text
+    out = []
+    for line in text.splitlines():
+        m = _PORT_LINE.match(line)
+        if m:
+            port, state, service, rest = m.groups()
+            if state == "open":
+                state_col = Fore.GREEN + Style.BRIGHT + state + Style.RESET_ALL
+            elif state == "closed":
+                state_col = Fore.RED + state + Style.RESET_ALL
+            else:
+                state_col = Fore.YELLOW + state + Style.RESET_ALL
+            line = (
+                Fore.CYAN + Style.BRIGHT + port + Style.RESET_ALL
+                + "  " + state_col
+                + "  " + Fore.BLUE + service + Style.RESET_ALL
+                + rest
+            )
+        elif _HEADER_LINE.match(line):
+            line = Style.BRIGHT + line + Style.RESET_ALL
+        elif _REPORT_LINE.match(line):
+            line = Fore.YELLOW + Style.BRIGHT + line + Style.RESET_ALL
+        out.append(line)
+    return "\n".join(out)
+
+def _run_nmap_colorized(cmd, logger, workdir):
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=workdir)
+    if result.stdout:
+        print(_colorize_nmap(result.stdout))
+    if result.stderr:
+        logger.debug(f"nmap stderr: {result.stderr.strip()}")
+
 def run_nmap_udp(ip, workdir, logger):
     output_file = os.path.join(workdir, "001-scan-snmp.md")
-    run_command(["sudo", "grc", "nmap", "-sU", "-p", "161", ip, "-oN", output_file], logger, cwd=workdir, check=False)
+    _run_nmap_colorized(
+        ["sudo", "nmap", "-sU", "-p", "161", ip, "-oN", output_file],
+        logger, workdir
+    )
     if os.path.exists(output_file):
         ensure_user_ownership(output_file, logger)
     return output_file
@@ -358,7 +406,10 @@ def run_nmap_tcp(ip, ports, workdir, logger):
         sys.exit(1)
     port_str = ",".join(map(str, ports))
     output_file = os.path.join(workdir, "002-scan-nmap.md")
-    run_command(["grc", "nmap", "-sCV", "-Pn", "-oN", output_file, "-p", port_str, ip], logger, cwd=workdir, check=False)
+    _run_nmap_colorized(
+        ["nmap", "-sCV", "-Pn", "-oN", output_file, "-p", port_str, ip],
+        logger, workdir
+    )
     return output_file
 
 def run_nxc_hosts(ip, workdir, logger):
