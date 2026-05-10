@@ -383,18 +383,21 @@ def _colorize_nmap(text):
         out.append(line)
     return "\n".join(out)
 
-def _run_nmap_colorized(cmd, logger, workdir):
+def _run_nmap_colorized(cmd, output_file, logger, workdir):
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=workdir)
-    if result.stdout:
-        print(_colorize_nmap(result.stdout))
+    colorized = _colorize_nmap(result.stdout or "")
+    if colorized:
+        print(colorized)
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(colorized)
     if result.stderr:
         logger.debug(f"nmap stderr: {result.stderr.strip()}")
 
 def run_nmap_udp(ip, workdir, logger):
     output_file = os.path.join(workdir, "001-scan-snmp.md")
     _run_nmap_colorized(
-        ["sudo", "nmap", "-sU", "-p", "161", ip, "-oN", output_file],
-        logger, workdir
+        ["sudo", "nmap", "-sU", "-p", "161", ip],
+        output_file, logger, workdir
     )
     if os.path.exists(output_file):
         ensure_user_ownership(output_file, logger)
@@ -407,8 +410,8 @@ def run_nmap_tcp(ip, ports, workdir, logger):
     port_str = ",".join(map(str, ports))
     output_file = os.path.join(workdir, "002-scan-nmap.md")
     _run_nmap_colorized(
-        ["nmap", "-sCV", "-Pn", "-oN", output_file, "-p", port_str, ip],
-        logger, workdir
+        ["nmap", "-sCV", "-Pn", "-p", port_str, ip],
+        output_file, logger, workdir
     )
     return output_file
 
@@ -1135,4 +1138,7 @@ def main():
     finalize_results(summaries, targets, notes_dir_base, logger)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)
