@@ -19,7 +19,10 @@ def ensure_system_tools():
         print("grc is already installed.")
     else:
         print("Installing grc...")
-        apt_install("grc")
+        result = subprocess.run(["sudo", "apt", "install", "-y", "grc"])
+        if result.returncode != 0:
+            print("  apt install grc failed, trying pip...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "--user", "grc"])
 
     if command_exists("pipx"):
         print("pipx is already installed.")
