@@ -29,7 +29,7 @@ import ipaddress
 LOG_LEVEL_DEFAULT = "INFO"
 CONFIG_FILENAME = "config.json"
 APPLICATION_NAME = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-NOTEBOOK_BASEDIR = "/home/kali/notes/Boxes"
+NOTEBOOK_BASEDIR = os.path.expanduser("~/notes/Boxes")
 EXCLUDED_PORTS = {0, 1, 38}
 
 SERVICE_PORTS = {
@@ -430,7 +430,7 @@ def parse_args():
     parser.add_argument("-debug", action="store_true", help="Enable debug logging (same as -log-level DEBUG)")
     parser.add_argument("-log", action="store_true", help="Show last 200 lines of log and exit.")
     parser.add_argument("-o", "-outputdir", dest="outputdir", type=str, metavar="",
-                        help="Specify custom base directory (defaults to /home/kali/notes/Boxes).")
+                        help=f"Specify custom base directory (defaults to {NOTEBOOK_BASEDIR}).")
     args = parser.parse_args()
     args.target = args.target or args.target_opt
     if not args.target:
@@ -440,8 +440,9 @@ def parse_args():
 def resolve_output_dir(args, config, target_identifier):
     base_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(args.outputdir))) if args.outputdir else NOTEBOOK_BASEDIR
     cwd = os.getcwd()
-    if cwd.startswith("/home/kali/"):
-        relative = cwd[len("/home/kali/"):]
+    home = os.path.expanduser("~") + os.sep
+    if cwd.startswith(home):
+        relative = cwd[len(home):]
     else:
         relative = cwd.strip(os.sep)
     if not relative:
