@@ -11,6 +11,17 @@ def apt_install(package):
     if result.returncode != 0:
         print(f"  WARNING: apt install {package} failed (exit {result.returncode}). Install manually.")
 
+def get_nxc_version():
+    for cmd in ["nxc", "netexec"]:
+        if command_exists(cmd):
+            try:
+                result = subprocess.run([cmd, "--version"], capture_output=True, text=True)
+                version_str = result.stdout.strip().split()[0]
+                return tuple(int(x) for x in version_str.split("."))
+            except Exception:
+                pass
+    return None
+
 def ensure_system_tools():
     if command_exists("pipx"):
         print("pipx is already installed.")
@@ -25,10 +36,14 @@ def ensure_system_tools():
         print("Installing nmap...")
         apt_install("nmap")
 
-    if command_exists("nxc") or command_exists("netexec"):
-        print("netexec (nxc) is already installed.")
+    nxc_version = get_nxc_version()
+    if nxc_version and nxc_version >= (1, 3, 0):
+        print(f"netexec (nxc) is already at {'.'.join(str(x) for x in nxc_version)}, skipping.")
     else:
-        print("Installing netexec via pipx...")
+        if nxc_version:
+            print(f"netexec version {'.'.join(str(x) for x in nxc_version)} is outdated, upgrading to 1.3+...")
+        else:
+            print("Installing netexec via pipx...")
         result = subprocess.run(["pipx", "install", "git+https://github.com/Pennyw0rth/NetExec", "--force"])
         if result.returncode != 0:
             print("  WARNING: pipx install netexec failed. Install manually.")
