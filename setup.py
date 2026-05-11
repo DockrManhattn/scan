@@ -3,7 +3,31 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from setuptools import setup
+
+def ensure_setuptools():
+    """Fix hollow/stub setuptools installs (common on Ubuntu 22.04+)."""
+    try:
+        import setuptools
+        if setuptools.__file__ is None:
+            raise ImportError("stub")
+        from setuptools import setup  # noqa: F401
+        print("setuptools is healthy, skipping reinstall.")
+    except (ImportError, AttributeError):
+        print("setuptools is missing or broken, reinstalling...")
+        result = subprocess.run([
+            sys.executable, "-m", "pip", "install",
+            "--break-system-packages", "--force-reinstall", "setuptools"
+        ])
+        if result.returncode != 0:
+            print("  pip install failed, trying apt...")
+            subprocess.run(["sudo", "apt", "install", "-y", "python3-setuptools"])
+        # Re-exec this script now that setuptools is fixed
+        print("Restarting setup with working setuptools...")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+ensure_setuptools()
+
+from setuptools import setup  # noqa: E402
 
 def command_exists(name):
     return shutil.which(name) is not None
