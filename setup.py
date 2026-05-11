@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from setuptools import setup
 
 def command_exists(name):
@@ -65,15 +66,16 @@ def ensure_system_tools():
     else:
         print("Downloading RustScan...")
         deb = "rustscan_2.3.0_amd64.deb"
-        result = subprocess.run(
-            ["wget", "-q", f"https://github.com/RustScan/RustScan/releases/download/2.3.0/{deb}"]
-        )
-        if result.returncode != 0:
-            print("  WARNING: wget failed. Install rustscan manually from github.com/RustScan/RustScan")
-        else:
-            print("Installing RustScan...")
-            subprocess.run(["sudo", "apt", "install", "-y", f"./{deb}"])
-            subprocess.run(["rm", "-f", deb])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            deb_path = os.path.join(tmpdir, deb)
+            result = subprocess.run(
+                ["wget", "-q", "-O", deb_path, f"https://github.com/RustScan/RustScan/releases/download/2.3.0/{deb}"]
+            )
+            if result.returncode != 0:
+                print("  WARNING: wget failed. Install rustscan manually from github.com/RustScan/RustScan")
+            else:
+                print("Installing RustScan...")
+                subprocess.run(["sudo", "apt", "install", "-y", deb_path])
 
 if __name__ == "__main__":
     if len(sys.argv) == 1 or sys.argv[1] == "install":
