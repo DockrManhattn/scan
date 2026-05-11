@@ -105,6 +105,15 @@ def ensure_system_tools():
 
     fix_nxc_db()
 
+    # Ensure ansi2html CLI is available (used by scan.py for HTML report generation)
+    if command_exists("ansi2html"):
+        print("ansi2html is already installed.")
+    else:
+        print("Installing ansi2html via pipx...")
+        result = subprocess.run([pipx, "install", "ansi2html"])
+        if result.returncode != 0:
+            print("  WARNING: pipx install ansi2html failed. Install manually: pipx install ansi2html")
+
     if command_exists("rustscan"):
         print("rustscan is already installed.")
     else:
