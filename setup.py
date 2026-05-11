@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,15 @@ def get_nxc_version():
             except Exception:
                 pass
     return None
+
+def fix_nxc_db():
+    db_path = os.path.expanduser("~/.nxc/workspaces/default/smb.db")
+    if os.path.exists(db_path):
+        print("Removing stale nxc SMB DB to fix schema mismatch...")
+        os.remove(db_path)
+        print("  Done. nxc will reinitialize the DB on next run.")
+    else:
+        print("No stale nxc SMB DB found, skipping.")
 
 def ensure_system_tools():
     if command_exists("pipx"):
@@ -47,6 +57,8 @@ def ensure_system_tools():
         result = subprocess.run(["pipx", "install", "git+https://github.com/Pennyw0rth/NetExec", "--force"])
         if result.returncode != 0:
             print("  WARNING: pipx install netexec failed. Install manually.")
+
+    fix_nxc_db()
 
     if command_exists("rustscan"):
         print("rustscan is already installed.")
