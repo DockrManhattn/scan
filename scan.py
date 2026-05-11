@@ -454,6 +454,13 @@ def run_nxc_shares(ip, workdir, logger):
     return shares_file
 
 def convert_markdown_to_html(workdir, notes_dir, logger):
+    try:
+        from ansi2html import Ansi2HTMLConverter
+    except ImportError:
+        logger.warning("ansi2html not installed; skipping HTML conversion. Run: pip install ansi2html")
+        return
+
+    conv = Ansi2HTMLConverter(inline=True)
     os.makedirs(notes_dir, exist_ok=True)
     for name in os.listdir(workdir):
         if not name.endswith(".md") or not name.startswith("0"):
@@ -462,11 +469,10 @@ def convert_markdown_to_html(workdir, notes_dir, logger):
         html_path = os.path.join(notes_dir, name + ".html")
         with open(md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
-        result = subprocess.run(["ansi2html"], input=md_content, text=True, capture_output=True)
-        if result.stdout:
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write(result.stdout)
-            logger.debug(f"Wrote {html_path}")
+        html_output = conv.convert(md_content, full=True)
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_output)
+        logger.debug(f"Wrote {html_path}")
         ensure_user_ownership(md_path, logger)
         ensure_user_ownership(html_path, logger)
 # =========================
