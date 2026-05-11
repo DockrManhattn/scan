@@ -52,10 +52,11 @@ def ensure_system_tools():
             subprocess.run(["rm", "-f", deb])
 
 
-if __name__ == "__main__" and len(sys.argv) == 1:
-    ensure_system_tools()
-    subprocess.run([sys.executable, "-m", "pip", "install", "--user", "."])
-    sys.exit(0)
+if __name__ == "__main__":
+    if len(sys.argv) == 1 or sys.argv[1] == "install":
+        ensure_system_tools()
+        subprocess.run([sys.executable, "-m", "pip", "install", "--user", "."])
+        sys.exit(0)
 
 setup(
     name="scan",
