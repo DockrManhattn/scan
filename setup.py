@@ -1,61 +1,12 @@
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
-
-def ensure_setuptools():
-    """Fix hollow/stub setuptools installs (common on Ubuntu 22.04+)."""
-    try:
-        import setuptools
-        if setuptools.__file__ is None:
-            raise ImportError("stub")
-        from setuptools import setup  # noqa: F401
-        print("setuptools is healthy, skipping reinstall.")
-    except (ImportError, AttributeError):
-        print("setuptools is missing or broken, reinstalling...")
-        result = subprocess.run([
-            sys.executable, "-m", "pip", "install",
-            "--break-system-packages", "--force-reinstall", "setuptools"
-        ])
-        if result.returncode != 0:
-            print("  pip install failed, trying apt...")
-            subprocess.run(["sudo", "apt", "install", "-y", "python3-setuptools"])
-        # Re-exec this script now that setuptools is fixed
-        print("Restarting setup with working setuptools...")
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-ensure_setuptools()
-
-from setuptools import setup  # noqa: E402
-
-def command_exists(name):
-    return shutil.which(name) is not None
-
-def apt_install(package):
-    result = subprocess.run(["sudo", "apt", "install", "-y", package])
-    if result.returncode != 0:
-        print(f"  WARNING: apt install {package} failed (exit {result.returncode}). Install manually.")
-
-def get_nxc_version():
-    for cmd in ["nxc", "netexec"]:
-        if command_exists(cmd):
-            try:
-                result = subprocess.run([cmd, "--version"], capture_output=True, text=True)
-                version_str = result.stdout.strip().split()[0]
-                return tuple(int(x) for x in version_str.split("."))
-            except Exception:
-                pass
+def get_pipx_cmd():
+    """Return pipx command, checking both PATH and common user install locations."""
+    if command_exists("pipx"):
+        return "pipx"
+    # pip install --user puts it here
+    user_pipx = os.path.expanduser("~/.local/bin/pipx")
+    if os.path.exists(user_pipx):
+        return user_pipx
     return None
-
-def fix_nxc_db():
-    db_path = os.path.expanduser("~/.nxc/workspaces/default/smb.db")
-    if os.path.exists(db_path):
-        print("Removing stale nxc SMB DB to fix schema mismatch...")
-        os.remove(db_path)
-        print("  Done. nxc will reinitialize the DB on next run.")
-    else:
-        print("No stale nxc SMB DB found, skipping.")
 
 def ensure_system_tools():
     if command_exists("pipx"):
@@ -63,7 +14,13 @@ def ensure_system_tools():
     else:
         print("Installing pipx...")
         apt_install("python3-pip")
-        subprocess.run([sys.executable, "-m", "pip", "install", "--user", "pipx"])
+        subprocess.run([sys.executable, "-m", "pip", "install", "--user", "pipx",
+                        "--break-system-packages"])
+
+    pipx = get_pipx_cmd()
+    if pipx is None:
+        print("  ERROR: pipx not found even after install. Add ~/.local/bin to your PATH and re-run.")
+        sys.exit(1)
 
     if command_exists("nmap"):
         print("nmap is already installed.")
@@ -79,7 +36,7 @@ def ensure_system_tools():
             print(f"netexec version {'.'.join(str(x) for x in nxc_version)} is outdated, upgrading to 1.3+...")
         else:
             print("Installing netexec via pipx...")
-        result = subprocess.run(["pipx", "install", "git+https://github.com/Pennyw0rth/NetExec", "--force"])
+        result = subprocess.run([pipx, "install", "git+https://github.com/Pennyw0rth/NetExec", "--force"])
         if result.returncode != 0:
             print("  WARNING: pipx install netexec failed. Install manually.")
 
@@ -100,27 +57,3 @@ def ensure_system_tools():
             else:
                 print("Installing RustScan...")
                 subprocess.run(["sudo", "apt", "install", "-y", deb_path])
-
-if __name__ == "__main__":
-    if len(sys.argv) == 1 or sys.argv[1] == "install":
-        ensure_system_tools()
-        subprocess.run([sys.executable, "-m", "pip", "install", "--user", "."])
-        sys.exit(0)
-
-setup(
-    name="scan",
-    version="2.0.0",
-    description="Network scan helper with rustscan/nmap/nxc, logging, and HTML output",
-    author="dockrmanhattn@gmail.com",
-    py_modules=["scan"],
-    install_requires=[
-        "ansi2html",
-        "colorama",
-    ],
-    entry_points={
-        "console_scripts": [
-            "scan=scan:main",
-        ],
-    },
-    python_requires=">=3.8",
-)
