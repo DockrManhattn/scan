@@ -3,8 +3,7 @@ Type less, scan more.
 ## Installation
 The easiest way to install this script is to run:
 ```bash
-chmod +x ./setup.sh
-./setup.sh
+python3 setup.py
 ```
 Requires sudo to check SNMP
 ## Usage  
