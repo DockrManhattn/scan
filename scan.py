@@ -68,6 +68,24 @@ SERVICE_PORTS = {
     "xmpp": "5222,5269"
 }
 
+def ensure_ansi2html(logger):
+    if _find_ansi2html():
+        logger.debug("ansi2html is already installed.")
+        return
+    logger.info("ansi2html not found; installing via pipx...")
+    result = subprocess.run(
+        ["pipx", "install", "ansi2html"],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        logger.info("ansi2html installed successfully.")
+    else:
+        logger.warning(
+            f"Failed to install ansi2html via pipx. "
+            f"HTML conversion will be skipped.\n{result.stderr.strip()}"
+        )
+        
 def _build_discovery_ports():
     ports = set()
     for port_str in SERVICE_PORTS.values():
@@ -1148,6 +1166,8 @@ def main():
 
     logger, log_file_path = configure_logging(args, config)
     handle_log_option(args, log_file_path)
+
+    ensure_ansi2html(logger)
 
     targets = build_target_list(args.target, logger)
     logger.info(f"Processing {len(targets)} target(s).")
