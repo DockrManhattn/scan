@@ -3,16 +3,13 @@ import subprocess
 import sys
 from setuptools import setup
 
-
 def command_exists(name):
     return shutil.which(name) is not None
-
 
 def apt_install(package):
     result = subprocess.run(["sudo", "apt", "install", "-y", package])
     if result.returncode != 0:
         print(f"  WARNING: apt install {package} failed (exit {result.returncode}). Install manually.")
-
 
 def ensure_system_tools():
     if command_exists("pipx"):
@@ -32,7 +29,7 @@ def ensure_system_tools():
         print("netexec (nxc) is already installed.")
     else:
         print("Installing netexec via pipx...")
-        result = subprocess.run(["pipx", "install", "netexec"])
+        result = subprocess.run(["pipx", "install", "git+https://github.com/Pennyw0rth/NetExec", "--force"])
         if result.returncode != 0:
             print("  WARNING: pipx install netexec failed. Install manually.")
 
@@ -50,7 +47,6 @@ def ensure_system_tools():
             print("Installing RustScan...")
             subprocess.run(["sudo", "apt", "install", "-y", f"./{deb}"])
             subprocess.run(["rm", "-f", deb])
-
 
 if __name__ == "__main__":
     if len(sys.argv) == 1 or sys.argv[1] == "install":
